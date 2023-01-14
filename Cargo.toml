@@ -1,0 +1,20 @@
+[package]
+name = "fs-store"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+actix-web = "4.2.1"
+derive_more = "0.99.17"
+diesel = {version="2.0.0", features = ["postgres", "r2d2", "chrono", "numeric"]}
+dotenvy = "0.15.6"
+serde = {version  = "1.0.147", features = ["derive"]}
+serde_json = "1.0.88"
+actix-web-validator = "5.0.1"
+validator = { version = "0.16", features = ["derive"] }
+chrono = {version = "0.4.23", features = ["serde"]}
+bigdecimal = { version = "0.3.0", features = ["serde"] }
+regex = "1.7.0"
+actix-cors = "0.6.4"
