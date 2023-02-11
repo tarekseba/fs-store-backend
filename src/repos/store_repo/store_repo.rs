@@ -4,7 +4,7 @@ use crate::{
         StoreResultWithProducts, TransformTo, UpdateStoreDto, Worktimes,
     },
     repos::pagination::{Paginate, PaginationDto},
-    routes::SearchBy,
+    routes::{DateFilter, SearchBy},
     schema::{stores, stores::*, worktimes},
     utils::Connection,
 };
@@ -36,14 +36,21 @@ pub async fn get_many(
     mut conn: Connection,
     pagination: PaginationDto,
     search_by: SearchBy,
+    date: DateFilter,
 ) -> HttpResponse {
     let result = web::block(move || {
+        println!("{:?}", date);
+        println!("{:?}", date.get_after());
+        println!("{:?}", date.get_before());
         let results = stores::table
             .filter(
-                stores::name.ilike(search_by.get_name()).and(
-                    stores::is_holiday
-                        .eq_any(vec![search_by.get_is_holiday(), search_by.get_is_holiday_neg()])
-                ),
+                stores::name
+                    .ilike(search_by.get_name())
+                    .and(stores::is_holiday.eq_any(vec![
+                        search_by.get_is_holiday(),
+                        search_by.get_is_holiday_neg(),
+                    ]))
+                    .and(stores::created_at.between(date.get_after(), date.get_before())),
             )
             .order(stores::columns::id)
             .paginate(pagination.page)
