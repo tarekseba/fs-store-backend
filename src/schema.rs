@@ -12,8 +12,10 @@ diesel::table! {
     products (id) {
         id -> Int4,
         name -> Varchar,
+        i18n_name -> Nullable<Varchar>,
         price -> Numeric,
         description -> Nullable<Text>,
+        i18n_description -> Nullable<Text>,
         created_at -> Timestamp,
         store_id -> Nullable<Int4>,
     }

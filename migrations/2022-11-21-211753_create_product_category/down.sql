@@ -1,2 +1,2 @@
-DROP TABLE products_categories;
+DROP TABLE IF EXISTS products_categories CASCADE;
 

@@ -1,1 +1,1 @@
-drop table worktimes
+drop table if exists worktimes CASCADE;

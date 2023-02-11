@@ -39,9 +39,6 @@ pub async fn get_many(
     date: DateFilter,
 ) -> HttpResponse {
     let result = web::block(move || {
-        println!("{:?}", date);
-        println!("{:?}", date.get_after());
-        println!("{:?}", date.get_before());
         let results = stores::table
             .filter(
                 stores::name

@@ -1,1 +1,1 @@
-drop table stores
+drop table if exists stores CASCADE;
