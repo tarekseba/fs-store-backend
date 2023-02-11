@@ -39,7 +39,7 @@ pub struct OrderBy {
 }
 
 impl OrderBy {
-    fn option(self) -> Option<Self> {
+    pub fn option(self) -> Option<Self> {
         match self {
             Self {
                 order: Some(x),

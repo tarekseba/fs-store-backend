@@ -1,6 +1,7 @@
 use crate::{
     models::{CategoryDto, UpdateCategoryDto},
     repos::{category_repo, pagination::PaginationDto},
+    routes::OrderBy,
     utils::{json_error_handler, AppData},
 };
 use actix_web::{delete, get, post, put, web, HttpResponse};
@@ -26,10 +27,19 @@ async fn get(app_data: web::Data<AppData>, id: web::Path<i32>) -> HttpResponse {
 async fn get_many(
     app_data: web::Data<AppData>,
     pagination: Query<PaginationDto>,
+    order: Query<OrderBy>,
     search_by: Query<SearchBy>,
 ) -> HttpResponse {
     match app_data.pg_pool.get() {
-        Ok(conn) => category_repo::get_many(conn, pagination.into_inner(), search_by.into_inner()).await,
+        Ok(conn) => {
+            category_repo::get_many(
+                conn,
+                pagination.into_inner(),
+                order.into_inner().option(),
+                search_by.into_inner(),
+            )
+            .await
+        }
         _ => HttpResponse::InternalServerError().body("Internal Server Error"),
     }
 }

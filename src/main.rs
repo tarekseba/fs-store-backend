@@ -16,7 +16,9 @@ mod utils;
 #[main]
 async fn main() -> std::io::Result<()> {
     let config: Config = Config::load_config();
+    println!("before");
     let app_data: AppData = create_conn_pool(&config);
+    println!("after");
     server_running(&config);
     HttpServer::new(move || {
         let cors = Cors::permissive();
