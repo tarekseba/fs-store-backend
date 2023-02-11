@@ -1,11 +1,11 @@
 use crate::{
     models::{
         CanRespond, Category, InsertableProduct, Product, ProductDto, ProductsCategories,
-        ProductsResult, ResultEnum, UpdateProductDto,
+        ProductsResult, ResultEnum, Store, UpdateProductDto,
     },
     repos::pagination::{Paginate, PaginationDto},
     routes::{OrderBy, SearchBy, Stringify},
-    schema::{categories, products, products_categories},
+    schema::{categories, products, products_categories, stores},
     utils::Connection,
 };
 use actix_web::{http::StatusCode, web, HttpResponse};
@@ -34,25 +34,38 @@ pub async fn get_many(
                     .ilike(search.get_name())
                     .or(products::description.ilike(search.get_description())),
             )
-            .order(sql::<Text>(&order.stringify()))
+            .order(sql::<Text>(&format!("products.{}", &order.stringify().to_owned())))
+            .left_join(stores::table)
             .paginate(pagination.page)
             .per_page(pagination.per_page)
-            .load_and_count_pages::<Product>(&mut conn);
+            .load_and_count_pages::<(Product, Option<Store>)>(&mut conn);
         let data = results.unwrap();
+        let products = data.clone()
+            .0
+            .into_iter()
+            .map(|data: (Product, Option<Store>)| data.0)
+            .collect::<Vec<Product>>();
+        let products_stores = data
+            .0
+            .into_iter()
+            .map(|data: (Product, Option<Store>)| data.1)
+            .collect::<Vec<Option<Store>>>();
         // 2nd DB call
-        let cats = ProductsCategories::belonging_to(&data.0)
+        let cats = ProductsCategories::belonging_to(&products)
             .inner_join(categories::table)
             .load::<(ProductsCategories, Category)>(&mut conn)
             .unwrap()
-            .grouped_by(&data.0);
+            .grouped_by(&products);
         println!("{:?}", cats);
         Ok((
             // data transformation
-            data.0
+            products
                 .into_iter()
                 .zip(cats)
-                .map(|data: (Product, Vec<(ProductsCategories, Category)>)| data.into())
-                .collect::<Vec<ProductsResult>>(),
+                .zip(products_stores)
+                .map(|data: ((Product, Vec<(ProductsCategories, Category)>), Option<Store>)| data.into())
+                .collect::<Vec<ProductsResult>>()
+            ,
             data.1,
             data.2,
             data.3,

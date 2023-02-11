@@ -1,14 +1,14 @@
-use crate::schema::worktimes;
 use crate::schema::stores;
+use crate::schema::worktimes;
 use chrono::NaiveDateTime;
-use diesel::{AsChangeset, Insertable, Queryable, Identifiable, Associations};
+use diesel::{AsChangeset, Associations, Identifiable, Insertable, Queryable};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use validator::{Validate, ValidationError};
 
 use super::Product;
 
-#[derive(Identifiable, Queryable, Serialize, Deserialize, Debug)]
+#[derive(Identifiable, Queryable, Serialize, Deserialize, Debug, Clone)]
 #[diesel(table_name = stores)]
 pub struct Store {
     pub id: i32,
@@ -23,7 +23,7 @@ pub struct StoreResult {
     pub name: String,
     pub is_holiday: bool,
     pub created_at: NaiveDateTime,
-    pub worktimes: Vec<Worktimes>
+    pub worktimes: Vec<Worktimes>,
 }
 
 #[derive(Serialize)]
@@ -33,7 +33,7 @@ pub struct StoreResultWithProducts {
     pub is_holiday: bool,
     pub created_at: NaiveDateTime,
     pub worktimes: Vec<Worktimes>,
-    pub products: Vec<Product>
+    pub products: Vec<Product>,
 }
 
 #[derive(Deserialize, Validate)]
@@ -62,7 +62,7 @@ pub struct Worktimes {
     pub am_open: Option<String>,
     pub am_close: Option<String>,
     pub pm_open: Option<String>,
-    pub pm_close: Option<String>
+    pub pm_close: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Validate)]
@@ -163,7 +163,7 @@ impl Into<StoreResult> for (Store, Vec<Worktimes>) {
             name: self.0.name,
             created_at: self.0.created_at,
             is_holiday: self.0.is_holiday,
-            worktimes: self.1
+            worktimes: self.1,
         }
     }
 }

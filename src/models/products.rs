@@ -8,7 +8,7 @@ use crate::{models::Store, schema::products};
 
 use super::{Category, ProductsCategories};
 
-#[derive(Identifiable, Queryable, Validate, Associations, Serialize, Deserialize, Debug)]
+#[derive(Identifiable, Queryable, Validate, Associations, Serialize, Deserialize, Debug, Clone)]
 #[diesel(table_name = products, belongs_to(Store))]
 pub struct Product {
     pub id: i32,
@@ -103,22 +103,48 @@ pub struct ProductsResult {
     pub description: Option<String>,
     pub i18n_description: Option<String>,
     pub created_at: NaiveDateTime,
-    pub store_id: Option<i32>,
+    pub store: Option<Store>,
     pub categories: Vec<Category>,
 }
 
-impl Into<ProductsResult> for (Product, Vec<(ProductsCategories, Category)>) {
+impl Into<ProductsResult> for ((Product, Vec<(ProductsCategories, Category)>), Option<Store>) {
     fn into(self) -> ProductsResult {
         ProductsResult {
-            id: self.0.id,
-            name: self.0.name,
-            i18n_name: self.0.i18n_name,
-            price: self.0.price,
-            description: self.0.description,
-            i18n_description: self.0.i18n_description,
-            created_at: self.0.created_at,
-            store_id: self.0.store_id,
-            categories: self.1.into_iter().map(|tup| tup.1).collect(),
+            id: self.0.0.id,
+            name: self.0.0.name,
+            i18n_name: self.0.0.i18n_name,
+            price: self.0.0.price,
+            description: self.0.0.description,
+            i18n_description: self.0.0.i18n_description,
+            created_at: self.0.0.created_at,
+            store: self.1,
+            categories: self.0.1.into_iter().map(|tup| tup.1).collect(),
+        }
+    }
+}
+
+pub struct LazyProduct {
+    pub id: i32,
+    pub name: String,
+    pub i18n_name: Option<String>,
+    pub price: BigDecimal,
+    pub description: Option<String>,
+    pub i18n_description: Option<String>,
+    pub created_at: NaiveDateTime,
+    pub store: Option<Store>,
+}
+
+impl LazyProduct {
+    pub fn from_product(x: (Product, Option<Store>)) -> Self {
+        LazyProduct {
+            id: x.0.id,
+            name: x.0.name,
+            i18n_name: x.0.i18n_name,
+            price: x.0.price,
+            description: x.0.description,
+            i18n_description: x.0.i18n_description,
+            created_at: x.0.created_at,
+            store: x.1,
         }
     }
 }
