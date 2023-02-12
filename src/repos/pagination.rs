@@ -4,8 +4,8 @@ use diesel::{
 use serde::Deserialize;
 use validator::Validate;
 
-const DEFAULT_PER_PAGE: i64 = 20;
-const DEFAULT_PAGE: i64 = 1;
+pub const DEFAULT_PER_PAGE: i64 = 20;
+pub const DEFAULT_PAGE: i64 = 1;
 
 pub trait Paginate: Sized {
     fn paginate(self, page: Option<i64>) -> Paginated<Self>;
@@ -91,4 +91,21 @@ pub struct PaginationDto {
     pub per_page: Option<i64>,
     #[validate(range(min = 1))]
     pub page: Option<i64>,
+}
+
+impl PaginationDto {
+    pub fn get_per_page(&self) -> i32 {
+        if let Some(per_page) = self.per_page {
+            return per_page as i32;
+        } else {
+            return DEFAULT_PER_PAGE as i32;
+        }
+    }
+    pub fn get_page(&self) -> i32 {
+        if let Some(page) = self.page {
+            return page as  i32;
+        } else {
+            return DEFAULT_PAGE as i32;
+        }
+    }
 }

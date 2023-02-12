@@ -1,5 +1,5 @@
 use crate::{
-    models::{ProductDto, UpdateProductDto},
+    models::{ProductDto, UpdateProductDto, CategoryId},
     repos::{pagination::PaginationDto, product_repo},
     utils::{json_error_handler, AppData},
 };
@@ -67,7 +67,7 @@ impl SearchBy {
         if let Self {
             name: Some(name),
             description: _,
-            in_holiday: _
+            in_holiday: _,
         } = self
         {
             format!("%{}%", name)
@@ -80,7 +80,7 @@ impl SearchBy {
         if let Self {
             name: _,
             description: Some(description),
-            in_holiday: _
+            in_holiday: _,
         } = self
         {
             format!("%{}%", description)
@@ -93,7 +93,7 @@ impl SearchBy {
         if let Self {
             name: _,
             description: _,
-            in_holiday: Some(val)
+            in_holiday: Some(val),
         } = self
         {
             val
@@ -106,7 +106,7 @@ impl SearchBy {
         if let Self {
             name: _,
             description: _,
-            in_holiday: Some(val)
+            in_holiday: Some(val),
         } = self
         {
             val
@@ -129,7 +129,7 @@ impl Stringify for Option<OrderBy> {
         {
             format!("{} {}", by, order)
         } else {
-            "id ASC".to_owned()
+            "created_at DESC".to_owned()
         }
     }
 }
@@ -148,8 +148,8 @@ async fn get_many(
     pagination: Query<PaginationDto>,
     order: Query<OrderBy>,
     search: Query<SearchBy>,
+    category_id: Query<CategoryId>,
 ) -> HttpResponse {
-    println!("{:?}", search);
     match app_data.pg_pool.get() {
         Ok(conn) => {
             product_repo::get_many(
@@ -157,6 +157,7 @@ async fn get_many(
                 pagination.into_inner(),
                 order.into_inner().option(),
                 search.into_inner(),
+                category_id.into_inner().category_id
             )
             .await
         }

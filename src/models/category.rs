@@ -9,7 +9,7 @@ use crate::schema::categories;
 #[diesel(table_name = categories)]
 pub struct Category {
     pub id: i32,
-    #[validate(length(min = 3, max = 10))]
+    #[validate(length(min = 3, max = 50))]
     pub name: String,
     pub created_at: NaiveDateTime,
 }

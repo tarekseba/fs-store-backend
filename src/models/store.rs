@@ -1,6 +1,7 @@
 use crate::schema::stores;
 use crate::schema::worktimes;
 use chrono::NaiveDateTime;
+use diesel::QueryableByName;
 use diesel::{AsChangeset, Associations, Identifiable, Insertable, Queryable};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -8,7 +9,7 @@ use validator::{Validate, ValidationError};
 
 use super::Product;
 
-#[derive(Identifiable, Queryable, Serialize, Deserialize, Debug, Clone)]
+#[derive(Identifiable, Queryable, Serialize, Deserialize, Debug, Clone, QueryableByName)]
 #[diesel(table_name = stores)]
 pub struct Store {
     pub id: i32,

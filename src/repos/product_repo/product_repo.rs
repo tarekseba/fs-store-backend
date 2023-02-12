@@ -1,3 +1,5 @@
+use std::error::Error;
+
 use crate::{
     models::{
         CanRespond, Category, InsertableProduct, Product, ProductDto, ProductsCategories,
@@ -9,7 +11,13 @@ use crate::{
     utils::Connection,
 };
 use actix_web::{http::StatusCode, web, HttpResponse};
-use diesel::{self, dsl::sql, prelude::*, sql_types::Text};
+use diesel::{
+    self,
+    dsl::sql,
+    prelude::*,
+    sql_query,
+    sql_types::{Integer, Text},
+};
 
 pub async fn get_product(mut conn: Connection, prod_id: i32) -> HttpResponse {
     let result = web::block(move || {
@@ -20,43 +28,75 @@ pub async fn get_product(mut conn: Connection, prod_id: i32) -> HttpResponse {
     ResultEnum::NotPaginated(result).respond(StatusCode::OK)
 }
 
+enum Test {
+    WithPc(Result<Vec<(Product, Option<Store>, Option<ProductsCategories>)>, diesel::result::Error>),
+    WithoutPc(Result<Vec<(Product, Option<Store>)>, diesel::result::Error>)
+}
+
 pub async fn get_many(
     mut conn: Connection,
     pagination: PaginationDto,
     order: Option<OrderBy>,
     search: SearchBy,
+    category_id: Option<i32>,
 ) -> HttpResponse {
     let result = web::block(move || {
         // 1st DB call
-        let results = products::table
-            .filter(
-                products::name
-                    .ilike(search.get_name())
-                    .or(products::description.ilike(search.get_description())),
-            )
-            .order(sql::<Text>(&format!("products.{}", &order.stringify().to_owned())))
-            .left_join(stores::table)
-            .paginate(pagination.page)
-            .per_page(pagination.per_page)
-            .load_and_count_pages::<(Product, Option<Store>)>(&mut conn);
-        let data = results.unwrap();
-        let products = data.clone()
-            .0
-            .into_iter()
-            .map(|data: (Product, Option<Store>)| data.0)
-            .collect::<Vec<Product>>();
-        let products_stores = data
-            .0
-            .into_iter()
-            .map(|data: (Product, Option<Store>)| data.1)
-            .collect::<Vec<Option<Store>>>();
+        let res = if let Some(cat_id) = category_id {
+            let mut db_query_one = String::from("SELECT * from products p left join stores s on s.id = p.store_id");
+            db_query_one.push_str(" right join products_categories pc on pc.product_id = p.id and pc.category_id = $1");
+            let db_query_two = format!(" WHERE p.name ILIKE $2 OR p.description ILIKE $3 ORDER BY p.{} LIMIT $4 OFFSET $5", order.stringify());
+            db_query_one.push_str(&db_query_two);
+            Test::WithPc(sql_query(db_query_one)
+                .bind::<Integer, _>(cat_id as i32)
+                .bind::<Text, _>(search.get_name())
+                .bind::<Text, _>(search.get_description())
+                .bind::<Integer, _>(pagination.get_per_page())
+                .bind::<Integer, _>((pagination.get_page() - 1) * pagination.get_per_page())
+                .load::<(Product, Option<Store>, Option<ProductsCategories>)>(&mut conn))
+        } else {
+            let mut db_query_one = String::from("SELECT distinct p.id, p.name, p.i18n_name, p.description, p.i18n_description, p.price, p.store_id, p.created_at, s.id, s.created_at, s.is_holiday, s.name from products p left join stores s on s.id = p.store_id");
+            let db_query_two = format!(" left join products_categories pc on pc.product_id = p.id WHERE p.name ILIKE $1 OR p.description ILIKE  $2 ORDER BY p.{} LIMIT $3 OFFSET $4", order.stringify());
+            db_query_one.push_str(&db_query_two);
+            Test::WithoutPc(sql_query(db_query_one)
+                .bind::<Text,_>(search.get_name())
+                .bind::<Text,_>(search.get_description())
+                .bind::<Integer,_>(pagination.get_per_page())
+                .bind::<Integer,_>((pagination.get_page() - 1) * pagination.get_per_page())
+                .load::<(Product, Option<Store>)>(&mut conn))
+        };
+        let (products, products_stores) = match res {
+            Test::WithPc(val) => {
+                let data = val.unwrap();
+                let products = data.clone()
+                    .into_iter()
+                    .map(|data: (Product, Option<Store>, Option<ProductsCategories>)| data.0)
+                    .collect::<Vec<Product>>();
+                let products_stores = data
+                    .into_iter()
+                    .map(|data: (Product, Option<Store>, Option<ProductsCategories>)| data.1)
+                    .collect::<Vec<Option<Store>>>();
+                (products, products_stores)
+            },
+            Test::WithoutPc(val) => {
+                let data = val.unwrap();
+                let products = data.clone()
+                    .into_iter()
+                    .map(|data: (Product, Option<Store>)| data.0)
+                    .collect::<Vec<Product>>();
+                let products_stores = data
+                    .into_iter()
+                    .map(|data: (Product, Option<Store>)| data.1)
+                    .collect::<Vec<Option<Store>>>();
+                (products, products_stores)
+            },
+        };
         // 2nd DB call
         let cats = ProductsCategories::belonging_to(&products)
             .inner_join(categories::table)
             .load::<(ProductsCategories, Category)>(&mut conn)
             .unwrap()
             .grouped_by(&products);
-        println!("{:?}", cats);
         Ok((
             // data transformation
             products
@@ -66,9 +106,9 @@ pub async fn get_many(
                 .map(|data: ((Product, Vec<(ProductsCategories, Category)>), Option<Store>)| data.into())
                 .collect::<Vec<ProductsResult>>()
             ,
-            data.1,
-            data.2,
-            data.3,
+            10 as i64,
+            pagination.get_page() as i64,
+            pagination.get_page() as i64 
         ))
     })
     .await;

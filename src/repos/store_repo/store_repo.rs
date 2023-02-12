@@ -124,10 +124,7 @@ pub async fn update_store(
                         .set(&worktime)
                         .get_result::<Worktimes>(&mut conn)
                     {
-                        Ok(_) => println!(
-                            "worktime with id {} has been successfully modified",
-                            worktime.id
-                        ),
+                        Ok(_) => (),
                         Err(err) => return Err(err),
                     }
                 }

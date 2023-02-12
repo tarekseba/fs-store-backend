@@ -1,10 +1,10 @@
 use crate::models::category::Category;
 use crate::models::products::Product;
 use crate::schema::products_categories;
-use diesel::{Associations, Identifiable, Queryable};
+use diesel::{Associations, Identifiable, Queryable, QueryableByName};
 use serde::Serialize;
 
-#[derive(Identifiable, Queryable, Associations, Debug, Serialize)]
+#[derive(Identifiable, Queryable, Associations, Debug, Serialize, Clone, QueryableByName)]
 #[belongs_to(Product, foreign_key = "product_id")]
 #[belongs_to(Category, foreign_key = "category_id")]
 #[diesel(table_name = products_categories)]

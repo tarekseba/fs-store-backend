@@ -8,7 +8,7 @@ use crate::{models::Store, schema::products};
 
 use super::{Category, ProductsCategories};
 
-#[derive(Identifiable, Queryable, Validate, Associations, Serialize, Deserialize, Debug, Clone)]
+#[derive(Identifiable, Queryable, Validate, Associations, Serialize, Deserialize, Debug, Clone, QueryableByName)]
 #[diesel(table_name = products, belongs_to(Store))]
 pub struct Product {
     pub id: i32,
@@ -37,6 +37,11 @@ pub struct ProductDto {
     pub category_id: Option<u64>,
     #[validate(range(min = 1))]
     pub store_id: Option<i32>,
+}
+
+#[derive(Deserialize, Validate)]
+pub struct CategoryId {
+    pub category_id: Option<i32>
 }
 
 impl Into<InsertableProduct> for ProductDto {
@@ -119,32 +124,6 @@ impl Into<ProductsResult> for ((Product, Vec<(ProductsCategories, Category)>), O
             created_at: self.0.0.created_at,
             store: self.1,
             categories: self.0.1.into_iter().map(|tup| tup.1).collect(),
-        }
-    }
-}
-
-pub struct LazyProduct {
-    pub id: i32,
-    pub name: String,
-    pub i18n_name: Option<String>,
-    pub price: BigDecimal,
-    pub description: Option<String>,
-    pub i18n_description: Option<String>,
-    pub created_at: NaiveDateTime,
-    pub store: Option<Store>,
-}
-
-impl LazyProduct {
-    pub fn from_product(x: (Product, Option<Store>)) -> Self {
-        LazyProduct {
-            id: x.0.id,
-            name: x.0.name,
-            i18n_name: x.0.i18n_name,
-            price: x.0.price,
-            description: x.0.description,
-            i18n_description: x.0.i18n_description,
-            created_at: x.0.created_at,
-            store: x.1,
         }
     }
 }
