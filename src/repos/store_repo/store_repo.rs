@@ -4,12 +4,13 @@ use crate::{
         StoreResultWithProducts, TransformTo, UpdateStoreDto, Worktimes,
     },
     repos::pagination::{Paginate, PaginationDto},
-    routes::{DateFilter, SearchBy},
-    schema::{stores, stores::*, worktimes},
+    routes::{DateFilter, SearchBy, StoresOrderBy, Stringify},
+    schema::{stores, stores::*, worktimes, products},
     utils::Connection,
 };
 use actix_web::{http::StatusCode, web, HttpResponse};
-use diesel::{delete, prelude::*, QueryDsl};
+use diesel::{delete, dsl::sql, prelude::*, sql_types::Text, QueryDsl};
+use serde::{Deserialize, Serialize};
 
 pub async fn get_store(mut conn: Connection, shop_id: i32) -> HttpResponse {
     let result = web::block(move || {
@@ -35,6 +36,7 @@ pub async fn get_store(mut conn: Connection, shop_id: i32) -> HttpResponse {
 pub async fn get_many(
     mut conn: Connection,
     pagination: PaginationDto,
+    order: Option<StoresOrderBy>,
     search_by: SearchBy,
     date: DateFilter,
 ) -> HttpResponse {
@@ -49,7 +51,7 @@ pub async fn get_many(
                     ]))
                     .and(stores::created_at.between(date.get_after(), date.get_before())),
             )
-            .order(stores::columns::id)
+            .order(sql::<Text>(&order.stringify()))
             .paginate(pagination.page)
             .per_page(pagination.per_page)
             .load_and_count_pages::<Store>(&mut conn);
@@ -142,4 +144,22 @@ pub async fn delete_store(mut conn: Connection, shop_id: i32) -> HttpResponse {
     })
     .await;
     ResultEnum::NotPaginated(result).respond(StatusCode::OK)
+}
+
+pub async fn product_count(mut conn: Connection, store_id: i32) -> HttpResponse {
+    let result = web::block(move || {
+        let count = products::table
+            .filter(products::store_id.eq(store_id))
+            .count()
+            .get_result(&mut conn);
+        Ok(Count {
+            count: count.unwrap()
+        })
+    }).await;
+    ResultEnum::NotPaginated(result).respond(StatusCode::OK)
+}
+
+#[derive(Serialize)]
+struct Count {
+    count: i64,
 }

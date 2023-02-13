@@ -1,5 +1,5 @@
 use crate::{
-    models::{ProductDto, UpdateProductDto, CategoryId},
+    models::{CategoryId, ProductDto, UpdateProductDto, StoreId},
     repos::{pagination::PaginationDto, product_repo},
     utils::{json_error_handler, AppData},
 };
@@ -8,11 +8,11 @@ use actix_web::{
     web::{self, ServiceConfig},
     HttpResponse,
 };
-use actix_web_validator::{Json, JsonConfig, Query, QueryConfig};
+use actix_web_validator::{Json, JsonConfig, Path, Query, QueryConfig};
 use serde::Deserialize;
 use validator::{Validate, ValidationError};
 
-fn validate_order(order: &str) -> Result<(), ValidationError> {
+pub fn validate_order(order: &str) -> Result<(), ValidationError> {
     if order == "ASC" || order == "DESC" {
         return Ok(());
     }
@@ -149,6 +149,7 @@ async fn get_many(
     order: Query<OrderBy>,
     search: Query<SearchBy>,
     category_id: Query<CategoryId>,
+    store_id: Query<StoreId>,
 ) -> HttpResponse {
     match app_data.pg_pool.get() {
         Ok(conn) => {
@@ -157,7 +158,8 @@ async fn get_many(
                 pagination.into_inner(),
                 order.into_inner().option(),
                 search.into_inner(),
-                category_id.into_inner().category_id
+                category_id.into_inner().category_id,
+                store_id.into_inner().store_id
             )
             .await
         }

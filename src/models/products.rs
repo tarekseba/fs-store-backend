@@ -44,6 +44,11 @@ pub struct CategoryId {
     pub category_id: Option<i32>
 }
 
+#[derive(Deserialize, Validate)]
+pub struct StoreId {
+    pub store_id: Option<i32>
+}
+
 impl Into<InsertableProduct> for ProductDto {
     fn into(self) -> InsertableProduct {
         InsertableProduct {
@@ -108,22 +113,38 @@ pub struct ProductsResult {
     pub description: Option<String>,
     pub i18n_description: Option<String>,
     pub created_at: NaiveDateTime,
-    pub store: Option<Store>,
+    pub store_id: Option<i32>,
     pub categories: Vec<Category>,
 }
 
-impl Into<ProductsResult> for ((Product, Vec<(ProductsCategories, Category)>), Option<Store>) {
+// impl Into<ProductsResult> for ((Product, Vec<(ProductsCategories, Category)>), Option<Store>) {
+//     fn into(self) -> ProductsResult {
+//         ProductsResult {
+//             id: self.0.0.id,
+//             name: self.0.0.name,
+//             i18n_name: self.0.0.i18n_name,
+//             price: self.0.0.price,
+//             description: self.0.0.description,
+//             i18n_description: self.0.0.i18n_description,
+//             created_at: self.0.0.created_at,
+//             store: self.1,
+//             categories: self.0.1.into_iter().map(|tup| tup.1).collect(),
+//         }
+//     }
+// }
+
+impl Into<ProductsResult> for (Product, Vec<(ProductsCategories, Category)>) {
     fn into(self) -> ProductsResult {
         ProductsResult {
-            id: self.0.0.id,
-            name: self.0.0.name,
-            i18n_name: self.0.0.i18n_name,
-            price: self.0.0.price,
-            description: self.0.0.description,
-            i18n_description: self.0.0.i18n_description,
-            created_at: self.0.0.created_at,
-            store: self.1,
-            categories: self.0.1.into_iter().map(|tup| tup.1).collect(),
+            id: self.0.id,
+            name: self.0.name,
+            i18n_name: self.0.i18n_name,
+            price: self.0.price,
+            description: self.0.description,
+            i18n_description: self.0.i18n_description,
+            created_at: self.0.created_at,
+            store_id: self.0.store_id,
+            categories: self.1.into_iter().map(|tup| tup.1).collect(),
         }
     }
 }
