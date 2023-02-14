@@ -10,7 +10,7 @@ use crate::{
 };
 use actix_web::{http::StatusCode, web, HttpResponse};
 use diesel::{delete, dsl::sql, prelude::*, sql_types::Text, QueryDsl};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 pub async fn get_store(mut conn: Connection, shop_id: i32) -> HttpResponse {
     let result = web::block(move || {
@@ -27,6 +27,7 @@ pub async fn get_store(mut conn: Connection, shop_id: i32) -> HttpResponse {
             created_at: store.created_at,
             worktimes,
             products,
+            prod_count: store.prod_count,
         })
     })
     .await;

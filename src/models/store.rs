@@ -16,14 +16,16 @@ pub struct Store {
     pub name: String,
     pub is_holiday: bool,
     pub created_at: NaiveDateTime,
+    pub prod_count: i32,
 }
 
 #[derive(Serialize)]
 pub struct StoreResult {
     pub id: i32,
-    pub name: String,
     pub is_holiday: bool,
     pub created_at: NaiveDateTime,
+    pub name: String,
+    pub prod_count: i32,
     pub worktimes: Vec<Worktimes>,
 }
 
@@ -33,6 +35,7 @@ pub struct StoreResultWithProducts {
     pub name: String,
     pub is_holiday: bool,
     pub created_at: NaiveDateTime,
+    pub prod_count: i32,
     pub worktimes: Vec<Worktimes>,
     pub products: Vec<Product>,
 }
@@ -164,6 +167,7 @@ impl Into<StoreResult> for (Store, Vec<Worktimes>) {
             name: self.0.name,
             created_at: self.0.created_at,
             is_holiday: self.0.is_holiday,
+            prod_count: self.0.prod_count,
             worktimes: self.1,
         }
     }

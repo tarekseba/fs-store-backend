@@ -159,7 +159,11 @@ pub fn init_store_routes(cfg: &mut ServiceConfig) {
 }
 
 fn validate_order_by(order_by: &str) -> Result<(), ValidationError> {
-    if order_by == "name" || order_by == "id" || order_by == "created_at" {
+    if order_by == "name"
+        || order_by == "id"
+        || order_by == "created_at"
+        || order_by == "prod_count"
+    {
         return Ok(());
     }
     Err(ValidationError::new("invalid order by column"))

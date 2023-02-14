@@ -35,6 +35,7 @@ diesel::table! {
         name -> Varchar,
         is_holiday -> Bool,
         created_at -> Timestamp,
+        prod_count -> Int4,
     }
 }
 

@@ -60,7 +60,7 @@ pub async fn get_many(
                 .bind::<Integer, _>((pagination.get_page() - 1) * pagination.get_per_page())
                 .load::<(Product, Option<Store>, Option<ProductsCategories>)>(&mut conn))
         } else {
-            let mut db_query_one = String::from("SELECT distinct p.id, p.name, p.i18n_name, p.description, p.i18n_description, p.price, p.store_id, p.created_at, s.id, s.created_at, s.is_holiday, s.name from products p left join stores s on s.id = p.store_id");
+            let mut db_query_one = String::from("SELECT distinct p.id, p.name, p.i18n_name, p.description, p.i18n_description, p.price, p.store_id, p.created_at, s.id, s.created_at, s.is_holiday, s.name, s.prod_count from products p left join stores s on s.id = p.store_id");
             let mut db_query_two = String::from(" left join products_categories pc on pc.product_id = p.id WHERE (p.name ILIKE $1 OR p.description ILIKE  $2) ");
             if let Some(id) = store {
                 db_query_two.push_str(&format!("AND p.store_id = {}", id))
