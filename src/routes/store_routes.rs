@@ -9,7 +9,7 @@ use actix_web::{
     web::{self, Data, ServiceConfig},
     HttpResponse
 };
-use actix_web_validator::{Json, JsonConfig, Query};
+use actix_web_validator::{Json, JsonConfig, Query, QueryConfig};
 use chrono::{DateTime, Local, NaiveDateTime, Utc};
 use serde::Deserialize;
 use utoipa::{ToSchema, IntoParams};
@@ -246,6 +246,7 @@ async fn product_count(app_data: Data<AppData>, store_id: web::Path<i32>) -> Htt
 
 pub fn init_store_routes(cfg: &mut ServiceConfig) {
     cfg.app_data(JsonConfig::default().error_handler(json_error_handler));
+    cfg.app_data(QueryConfig::default().error_handler(json_error_handler));
     cfg.service(get);
     cfg.service(get_many);
     cfg.service(post);

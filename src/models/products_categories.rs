@@ -5,8 +5,8 @@ use diesel::{Associations, Identifiable, Queryable, QueryableByName};
 use serde::Serialize;
 
 #[derive(Identifiable, Queryable, Associations, Debug, Serialize, Clone, QueryableByName)]
-#[belongs_to(Product, foreign_key = "product_id")]
-#[belongs_to(Category, foreign_key = "category_id")]
+#[diesel(belongs_to(Product, foreign_key = product_id))]
+#[diesel(belongs_to(Category, foreign_key = category_id))]
 #[diesel(table_name = products_categories)]
 pub struct ProductsCategories {
     pub id: i32,

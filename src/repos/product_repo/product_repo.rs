@@ -1,22 +1,19 @@
-use std::error::Error;
-
 use crate::{
     models::{
         CanRespond, Category, InsertableProduct, Product, ProductDto, ProductsCategories,
         ProductsResult, ResultEnum, Store, UpdateProductDto,
     },
-    repos::pagination::{Paginate, PaginationDto},
+    repos::pagination::PaginationDto,
     routes::{OrderBy, SearchBy, Stringify},
-    schema::{categories, products, products_categories, stores},
+    schema::{categories, products, products_categories},
     utils::Connection,
 };
 use actix_web::{http::StatusCode, web, HttpResponse};
 use diesel::{
     self,
-    dsl::sql,
     prelude::*,
     sql_query,
-    sql_types::{Integer, Text, Bool},
+    sql_types::{Integer, Text},
 };
 
 pub async fn get_product(mut conn: Connection, prod_id: i32) -> HttpResponse {
@@ -75,7 +72,7 @@ pub async fn get_many(
                 .load::<(Product, Option<Store>)>(&mut conn);
             Test::WithoutPc(res)
         };
-        let (products, products_stores) = match res {
+        let (products, _) = match res {
             Test::WithPc(val) => {
                 let data = val.unwrap();
                 let products = data.clone()

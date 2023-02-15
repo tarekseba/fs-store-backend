@@ -3,8 +3,8 @@ use actix_web::{
 };
 use actix_web_validator::Error;
 use serde::Serialize;
-use utoipa::ToSchema;
 use std::fmt::Display;
+use utoipa::ToSchema;
 
 #[derive(Serialize, ToSchema)]
 pub struct ValidationErrorJsonPayload {
@@ -41,12 +41,6 @@ pub fn json_error_handler<'r>(errors: Error, _req: &'r HttpRequest) -> actix_web
 #[derive(Debug, Serialize)]
 pub struct NotFoundError {
     error: String,
-}
-
-impl NotFoundError {
-    pub fn new(error: String) -> Self {
-        NotFoundError { error }
-    }
 }
 
 impl Display for NotFoundError {
