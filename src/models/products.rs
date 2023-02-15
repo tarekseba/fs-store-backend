@@ -2,13 +2,14 @@ use bigdecimal::{BigDecimal, FromPrimitive};
 use chrono::NaiveDateTime;
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
+use utoipa::{ToSchema, IntoParams};
 use validator::Validate;
 
 use crate::{models::Store, schema::products};
 
 use super::{Category, ProductsCategories};
 
-#[derive(Identifiable, Queryable, Validate, Associations, Serialize, Deserialize, Debug, Clone, QueryableByName)]
+#[derive(Identifiable, Queryable, Validate, Associations, Serialize, Deserialize, Debug, Clone, QueryableByName, ToSchema)]
 #[diesel(table_name = products, belongs_to(Store))]
 pub struct Product {
     pub id: i32,
@@ -21,7 +22,7 @@ pub struct Product {
     pub store_id: Option<i32>,
 }
 
-#[derive(Deserialize, Validate)]
+#[derive(Deserialize, Serialize, Validate, ToSchema, Clone, Debug)]
 pub struct ProductDto {
     #[validate(length(min = 3, max = 256))]
     pub name: String,
@@ -39,13 +40,15 @@ pub struct ProductDto {
     pub store_id: Option<i32>,
 }
 
-#[derive(Deserialize, Validate)]
+#[derive(Deserialize, Validate, ToSchema, IntoParams)]
 pub struct CategoryId {
+    #[schema(example = 2)]
     pub category_id: Option<i32>
 }
 
-#[derive(Deserialize, Validate)]
+#[derive(Deserialize, Validate, ToSchema, IntoParams)]
 pub struct StoreId {
+    #[schema(example = 2)]
     pub store_id: Option<i32>
 }
 
@@ -62,21 +65,28 @@ impl Into<InsertableProduct> for ProductDto {
     }
 }
 
-#[derive(Deserialize, Validate, Debug)]
+#[derive(Deserialize, Serialize, Validate, Debug, ToSchema, Clone)]
 pub struct UpdateProductDto {
     #[validate(range(min = 1))]
+    #[schema(example = 1)]
     pub id: Option<i32>,
     #[validate(length(min = 3, max = 256))]
+    #[schema(example = "a name")]
     pub name: String,
     #[validate(length(min = 3, max = 256))]
+    #[schema(example = "alt name")]
     pub i18n_name: Option<String>,
     #[validate(range(min = 1, max = 1000000))]
+    #[schema(example = 10.00)]
     pub price: f64,
     #[validate(length(min = 3, max = 1000))]
+    #[schema(example = "description")]
     pub description: Option<String>,
     #[validate(length(min = 3, max = 1000))]
+    #[schema(example = "alt description")]
     pub i18n_description: Option<String>,
     #[validate(range(min = 1))]
+    #[schema(example = 2)]
     pub store_id: Option<i32>,
 }
 

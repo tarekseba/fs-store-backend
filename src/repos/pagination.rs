@@ -2,6 +2,7 @@ use diesel::{
     pg::Pg, prelude::*, query_builder::*, query_dsl::methods::LoadQuery, sql_types::BigInt,
 };
 use serde::Deserialize;
+use utoipa::{IntoParams, ToSchema};
 use validator::Validate;
 
 pub const DEFAULT_PER_PAGE: i64 = 20;
@@ -85,11 +86,13 @@ where
     }
 }
 
-#[derive(Deserialize, Validate, Debug)]
+#[derive(Deserialize, Validate, Debug, IntoParams, ToSchema)]
 pub struct PaginationDto {
     #[validate(range(min = 1))]
+    #[schema(example = 10)]
     pub per_page: Option<i64>,
     #[validate(range(min = 1))]
+    #[schema(example = 2)]
     pub page: Option<i64>,
 }
 

@@ -5,11 +5,12 @@ use diesel::QueryableByName;
 use diesel::{AsChangeset, Associations, Identifiable, Insertable, Queryable};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 use validator::{Validate, ValidationError};
 
 use super::Product;
 
-#[derive(Identifiable, Queryable, Serialize, Deserialize, Debug, Clone, QueryableByName)]
+#[derive(Identifiable, Queryable, Serialize, Deserialize, Debug, Clone, QueryableByName, ToSchema)]
 #[diesel(table_name = stores)]
 pub struct Store {
     pub id: i32,
@@ -40,17 +41,20 @@ pub struct StoreResultWithProducts {
     pub products: Vec<Product>,
 }
 
-#[derive(Deserialize, Validate)]
+#[derive(Deserialize, Validate, ToSchema)]
 pub struct CreateStoreDto {
     #[validate(length(min = 2, max = 256))]
+    #[schema(example = "tarek's store")]
     pub name: String,
     pub is_holiday: bool,
+    #[schema(example = json!(vec![CreateWorktimeDto { day_id:1, am_open: Some("10:00".to_owned()), am_close: Some("12:00".to_owned()), pm_open: Some("02:00".to_owned()), pm_close: Some("07:00".to_owned())}]))]
     pub worktimes: [CreateWorktimeDto; 7],
 }
 
-#[derive(Deserialize, Validate)]
+#[derive(Deserialize, Validate, ToSchema)]
 pub struct UpdateStoreDto {
     #[validate(length(min = 2, max = 256))]
+    #[schema(example = "A new name")]
     pub name: String,
     pub is_holiday: bool,
     #[validate]

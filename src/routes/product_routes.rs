@@ -1,5 +1,5 @@
 use crate::{
-    models::{CategoryId, ProductDto, UpdateProductDto, StoreId},
+    models::{CategoryId, ProductDto, UpdateProductDto, StoreId, Product, PaginatedResult, QResult, ProductsCategories},
     repos::{pagination::PaginationDto, product_repo},
     utils::{json_error_handler, AppData},
 };
@@ -8,8 +8,11 @@ use actix_web::{
     web::{self, ServiceConfig},
     HttpResponse,
 };
-use actix_web_validator::{Json, JsonConfig, Path, Query, QueryConfig};
-use serde::Deserialize;
+use actix_web_validator::{Json, JsonConfig, Query, QueryConfig};
+use bigdecimal::BigDecimal;
+use chrono::Utc;
+use serde::{Deserialize, Serialize};
+use utoipa::{ToSchema, IntoParams};
 use validator::{Validate, ValidationError};
 
 pub fn validate_order(order: &str) -> Result<(), ValidationError> {
@@ -30,11 +33,13 @@ fn validate_order_by(order_by: &str) -> Result<(), ValidationError> {
     }
     Err(ValidationError::new("invalid order by column"))
 }
-#[derive(Deserialize, Validate, Debug)]
+#[derive(Deserialize, Validate, Debug, ToSchema, IntoParams)]
 pub struct OrderBy {
     #[validate(custom = "validate_order")]
+    #[schema(example = "ASC")]
     pub order: Option<String>,
     #[validate(custom = "validate_order_by")]
+    #[schema(example = "created_at")]
     pub by: Option<String>,
 }
 
@@ -53,11 +58,13 @@ impl OrderBy {
     }
 }
 
-#[derive(Deserialize, Validate, Debug)]
+#[derive(Serialize, Deserialize, Validate, Debug, ToSchema, IntoParams)]
 pub struct SearchBy {
     #[validate(length(max = 256))]
+    #[schema(example = "substring to look for")]
     pub name: Option<String>,
     #[validate(length(max = 256))]
+    #[schema(example = "substring to look for")]
     pub description: Option<String>,
     pub in_holiday: Option<bool>,
 }
@@ -133,17 +140,64 @@ impl Stringify for Option<OrderBy> {
         }
     }
 }
+// {
+// 	"rows": {
+// 		"id": 14,
+// 		"name": "lol",
+// 		"i18n_name": "haha",
+// 		"price": "10.00",
+// 		"description": "lol",
+// 		"i18n_description": "lol",
+// 		"created_at": "2023-02-14T23:04:25.325874",
+// 		"store_id": null
+// 	},
+// 	"error": null
+// }
 
+/// Returns corresponding product with id=:prodId
+#[utoipa::path(
+    get, 
+    path = "/product/{id}",
+    params(
+        ("id", description = "Unique id of products")
+    ),
+    responses(
+        (status = 200, description = "Returns the product with the id", body = QResult<Product>, example = json!(QResult {
+            rows: Product {id: 1, name: "product 1".to_owned(), price: BigDecimal::from(10), i18n_name: Some("i18n".to_owned()), i18n_description: Some("description".to_owned()), description: Some("description".to_owned()), created_at: Utc::now().naive_utc(), store_id: Some(1)},
+            error: None
+        })),
+    )
+)]
 #[get("{prod_id}")]
-async fn get(app_data: web::Data<AppData>, prod_id: web::Path<i32>) -> HttpResponse {
+pub async fn get(app_data: web::Data<AppData>, prod_id: web::Path<i32>) -> HttpResponse {
     match app_data.pg_pool.get() {
         Ok(conn) => product_repo::get_product(conn, prod_id.into_inner()).await,
         _ => HttpResponse::InternalServerError().body("Internal Server Error"),
     }
 }
 
+/// Returns a paginated list of products
+#[utoipa::path(
+    get, 
+    path = "/product",
+    params(
+        PaginationDto,
+        OrderBy,
+        SearchBy,
+        CategoryId,
+        StoreId
+    ),
+    responses(
+        (status = 200, description = "Returns a list of products", body = PaginatedResult<Product>, example = json!(PaginatedResult {
+            per_page: 10,
+            page: 1,
+            total_pages: 1,
+            result: vec![Product {id: 1, name: "product 1".to_owned(), price: BigDecimal::from(10), i18n_name: Some("i18n".to_owned()), i18n_description: Some("description".to_owned()), description: Some("description".to_owned()), created_at: Utc::now().naive_utc(), store_id: Some(1)}]
+        })),
+    )
+)]
 #[get("")]
-async fn get_many(
+pub async fn get_many(
     app_data: web::Data<AppData>,
     pagination: Query<PaginationDto>,
     order: Query<OrderBy>,
@@ -167,16 +221,43 @@ async fn get_many(
     }
 }
 
+/// Creates a new Product
+#[utoipa::path(
+    post, 
+    path = "/product",
+    request_body (content = ProductDto, content_type = "application/json", example = json!(ProductDto {  name: "product 1".to_owned(), price: 10.10, i18n_name: Some("i18n".to_owned()), i18n_description: Some("description".to_owned()), description: Some("description".to_owned()), store_id: Some(1), category_id: None })),
+    responses(
+        (status = 200, body = QResult<Product>, example = json!(QResult {
+            rows: Product {id: 1, name: "product 1".to_owned(), price: BigDecimal::from(10), i18n_name: Some("i18n".to_owned()), i18n_description: Some("description".to_owned()), description: Some("description".to_owned()), created_at: Utc::now().naive_utc(), store_id: Some(1)},
+            error: None
+        })),
+    )
+)]
 #[post("")]
-async fn post(app_data: web::Data<AppData>, prod: Json<ProductDto>) -> HttpResponse {
+pub async fn post(app_data: web::Data<AppData>, prod: Json<ProductDto>) -> HttpResponse {
     match app_data.pg_pool.get() {
         Ok(conn) => product_repo::add_product(conn, prod.into_inner()).await,
         _ => HttpResponse::InternalServerError().body("Internal Server Error"),
     }
 }
 
+/// Edits product with corresponding ID
+#[utoipa::path(
+    put, 
+    path = "/product",
+    request_body = UpdateProductDto,
+    params (
+        ("id", description = "id of product")
+    ),
+    responses(
+        (status = 200, body = QResult<Product>, example = json!(QResult {
+            rows: Product {id: 1, name: "product 1".to_owned(), price: BigDecimal::from(10), i18n_name: Some("i18n".to_owned()), i18n_description: Some("description".to_owned()), description: Some("description".to_owned()), created_at: Utc::now().naive_utc(), store_id: Some(1)},
+            error: None
+        })),
+    )
+)]
 #[put("{id}")]
-async fn update(
+pub async fn update(
     app_data: web::Data<AppData>,
     prod_id: web::Path<i32>,
     prod: Json<UpdateProductDto>,
@@ -189,16 +270,46 @@ async fn update(
     }
 }
 
+/// Deletes product with id
+#[utoipa::path(
+    delete, 
+    path = "/product/{id}",
+    params(
+        ("id", description = "Unique id of products")
+    ),
+    responses(
+        (status = 200, description = "Returns deleted product", body = QResult<Product>, example = json!(QResult {
+            rows: Product {id: 1, name: "product 1".to_owned(), price: BigDecimal::from(10), i18n_name: Some("i18n".to_owned()), i18n_description: Some("description".to_owned()), description: Some("description".to_owned()), created_at: Utc::now().naive_utc(), store_id: Some(1)},
+            error: None
+        })),
+    )
+)]
 #[delete("{id}")]
-async fn delete(app_data: web::Data<AppData>, id: web::Path<i32>) -> HttpResponse {
+pub async fn delete(app_data: web::Data<AppData>, id: web::Path<i32>) -> HttpResponse {
     match app_data.pg_pool.get() {
         Ok(conn) => product_repo::delete_product(conn, id.into_inner()).await,
         _ => HttpResponse::InternalServerError().body("Internal Server Error"),
     }
 }
 
+
+/// Attach category to product
+#[utoipa::path(
+    put, 
+    path = "/product/{prod_id}/category/{cat_id}",
+    params(
+        ("prod_id", description = "Unique id of products"),
+        ("cat_id", description = "Unique id of category"),
+    ),
+    responses(
+        (status = 200, body = QResult<ProductsCategories>, example = json!(QResult {
+            rows: ProductsCategories { id: 1, category_id: 3, product_id: 5 },
+            error: None
+        })),
+    )
+)]
 #[put("{prod_id}/category/{cat_id}")]
-async fn attach_category(
+pub async fn attach_category(
     app_data: web::Data<AppData>,
     path: web::Path<(i32, i32)>,
 ) -> HttpResponse {
@@ -209,16 +320,46 @@ async fn attach_category(
     }
 }
 
+/// Attach store to product
+#[utoipa::path(
+    put, 
+    path = "/product/{prod_id}/store/{store_id}",
+    params(
+        ("prod_id", description = "Unique id of products"),
+        ("store_id", description = "Unique id of stores"),
+    ),
+    responses(
+        (status = 200, description = "Returns a list of products", body = QResult<Product>, example = json!(QResult {
+            rows: Product {id: 1, name: "product 1".to_owned(), price: BigDecimal::from(10), i18n_name: Some("i18n".to_owned()), i18n_description: Some("description".to_owned()), description: Some("description".to_owned()), created_at: Utc::now().naive_utc(), store_id: Some(1)},
+            error: None
+        })),
+    )
+)]
 #[put("{prod_id}/store/{store_id}")]
-async fn attach_store(app_data: web::Data<AppData>, path: web::Path<(i32, i32)>) -> HttpResponse {
+pub async fn attach_store(app_data: web::Data<AppData>, path: web::Path<(i32, i32)>) -> HttpResponse {
     match app_data.pg_pool.get() {
         Ok(conn) => product_repo::attach_store(conn, path.0, path.1).await,
         _ => HttpResponse::InternalServerError().body("Internal Server Error"),
     }
 }
 
+/// Dettach category from product
+#[utoipa::path(
+    delete, 
+    path = "/product/{prod_id}/category/{cat_id}",
+    params(
+        ("prod_id", description = "Unique id of products"),
+        ("cat_id", description = "Unique id of category"),
+    ),
+    responses(
+        (status = 200, description = "Returns a list of products", body = QResult<ProductsCategories>, example = json!(QResult {
+            rows: ProductsCategories { id: 1, category_id: 3, product_id: 5 },
+            error: None
+        })),
+    )
+)]
 #[delete("{prod_id}/category/{cat_id}")]
-async fn dettach_category(
+pub async fn dettach_category(
     app_data: web::Data<AppData>,
     path: web::Path<(i32, i32)>,
 ) -> HttpResponse {

@@ -1,7 +1,8 @@
 use actix_web::{error::BlockingError, http::StatusCode, web, HttpResponse, HttpResponseBuilder};
 use serde::Serialize;
+use utoipa::ToSchema;
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 pub struct QResult<T>
 where
     T: Serialize,
@@ -16,7 +17,7 @@ impl<T: Serialize> QResult<T> {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 pub struct PaginatedResult<T>
 where
     T: Serialize,

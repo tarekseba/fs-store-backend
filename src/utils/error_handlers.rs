@@ -3,11 +3,14 @@ use actix_web::{
 };
 use actix_web_validator::Error;
 use serde::Serialize;
+use utoipa::ToSchema;
 use std::fmt::Display;
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 pub struct ValidationErrorJsonPayload {
+    #[schema(example = "validation error")]
     pub message: String,
+    #[schema(example = json!(vec!["name", "price"]))]
     pub fields: Vec<String>,
 }
 
