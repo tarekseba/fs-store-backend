@@ -26,13 +26,11 @@ pub struct Product {
 pub struct ProductDto {
     #[validate(length(min = 3, max = 256))]
     pub name: String,
-    #[validate(length(min = 3, max = 256))]
     pub i18n_name: Option<String>,
     #[validate(range(min = 0, max = 1000000))]
     pub price: f64,
     #[validate(length(min = 3, max = 1000))]
     pub description: Option<String>,
-    #[validate(length(min = 3, max = 1000))]
     pub i18n_description: Option<String>,
     #[validate(range(min = 1))]
     pub category_id: Option<u64>,
@@ -73,16 +71,16 @@ pub struct UpdateProductDto {
     #[validate(length(min = 3, max = 256))]
     #[schema(example = "a name")]
     pub name: String,
-    #[validate(length(min = 3, max = 256))]
     #[schema(example = "alt name")]
+    #[validate(length(max = 256))]
     pub i18n_name: Option<String>,
     #[validate(range(min = 1, max = 1000000))]
     #[schema(example = 10.00)]
     pub price: f64,
-    #[validate(length(min = 3, max = 1000))]
+    #[validate(length(max = 1000))]
     #[schema(example = "description")]
     pub description: Option<String>,
-    #[validate(length(min = 3, max = 1000))]
+    #[validate(length(max = 1000))]
     #[schema(example = "alt description")]
     pub i18n_description: Option<String>,
     #[validate(range(min = 1))]

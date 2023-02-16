@@ -29,3 +29,16 @@ END;
 $$ LANGUAGE PLPGSQL;
 
 CREATE OR REPLACE TRIGGER increment_prod_count_trigger AFTER UPDATE ON products FOR ROW EXECUTE PROCEDURE update_store_product_count();
+
+CREATE OR REPLACE FUNCTION update_store_product_count_on_insert()
+RETURNS TRIGGER
+AS $$
+BEGIN
+  IF NEW.store_id IS NOT NULL THEN
+    UPDATE stores SET prod_count = prod_count + 1 WHERE id = NEW.store_id;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE PLPGSQL;
+
+CREATE OR REPLACE TRIGGER increment_prod_count_trigger_on_insert AFTER INSERT ON products FOR ROW EXECUTE PROCEDURE update_store_product_count_on_insert();
